@@ -1,32 +1,8 @@
 package com.dotmarketing.portlets.htmlpageasset.business;
 
-import java.io.StringWriter;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.servlet.http.Cookie;
-
-import com.dotmarketing.portlets.contentlet.model.ContentletVersionInfo;
-import com.dotmarketing.portlets.languagesmanager.model.Language;
-import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.context.Context;
-import org.apache.velocity.exception.ResourceNotFoundException;
-
 import com.dotcms.enterprise.LicenseUtil;
 import com.dotcms.notifications.bean.NotificationLevel;
-import com.dotmarketing.beans.Host;
-import com.dotmarketing.beans.Identifier;
-import com.dotmarketing.beans.MultiTree;
-import com.dotmarketing.beans.Permission;
-import com.dotmarketing.beans.UserProxy;
-import com.dotmarketing.beans.VersionInfo;
+import com.dotmarketing.beans.*;
 import com.dotmarketing.business.APILocator;
 import com.dotmarketing.business.CacheLocator;
 import com.dotmarketing.business.DotStateException;
@@ -49,10 +25,10 @@ import com.dotmarketing.exception.DotSecurityException;
 import com.dotmarketing.factories.MultiTreeFactory;
 import com.dotmarketing.filters.ClickstreamFilter;
 import com.dotmarketing.portlets.contentlet.model.Contentlet;
+import com.dotmarketing.portlets.contentlet.model.ContentletVersionInfo;
 import com.dotmarketing.portlets.folders.model.Folder;
 import com.dotmarketing.portlets.htmlpageasset.model.HTMLPageAsset;
 import com.dotmarketing.portlets.htmlpageasset.model.IHTMLPage;
-import com.dotmarketing.portlets.htmlpages.business.HTMLPageAPIImpl;
 import com.dotmarketing.portlets.htmlpages.model.HTMLPage;
 import com.dotmarketing.portlets.structure.factories.FieldFactory;
 import com.dotmarketing.portlets.structure.factories.StructureFactory;
@@ -60,17 +36,19 @@ import com.dotmarketing.portlets.structure.model.Field;
 import com.dotmarketing.portlets.structure.model.Structure;
 import com.dotmarketing.portlets.templates.model.Template;
 import com.dotmarketing.services.PageServices;
-import com.dotmarketing.util.Config;
-import com.dotmarketing.util.CookieUtil;
-import com.dotmarketing.util.InodeUtils;
-import com.dotmarketing.util.Logger;
-import com.dotmarketing.util.RegEX;
-import com.dotmarketing.util.UtilMethods;
-import com.dotmarketing.util.VelocityUtil;
-import com.dotmarketing.util.WebKeys;
+import com.dotmarketing.util.*;
 import com.dotmarketing.velocity.VelocityServlet;
 import com.liferay.portal.language.LanguageUtil;
 import com.liferay.portal.model.User;
+import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.context.Context;
+import org.apache.velocity.exception.ResourceNotFoundException;
+
+import javax.servlet.http.Cookie;
+import java.io.StringWriter;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
+import java.util.*;
 
 public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
 
@@ -169,11 +147,19 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
 
     @Override
     public HTMLPageAsset fromContentlet(Contentlet con) {
-        if (con == null || con.getStructure().getStructureType() != Structure.STRUCTURE_TYPE_HTMLPAGE) {
-            throw new DotStateException("Contentlet : " + con.getInode() + " is not a pageAsset");
-        }
-
-        HTMLPageAsset pa=new HTMLPageAsset();
+    	if (con != null){
+    		if(con.getStructure().getStructureType() != Structure.STRUCTURE_TYPE_HTMLPAGE) {
+    			throw new DotStateException("Contentlet : " + con.getInode() + " is not a pageAsset");
+    		}
+    	}else{
+    		throw new DotStateException("Contentlet is null");
+    	}
+    	
+    	HTMLPageAsset pa = (HTMLPageAsset) CacheLocator.getHTMLPageCache().get(con.getInode());
+    	if(pa!=null){
+    		return pa;
+    	}
+        pa=new HTMLPageAsset();
         pa.setStructureInode(con.getStructureInode());
         try {
             APILocator.getContentletAPI().copyProperties((Contentlet) pa, con.getMap());
@@ -193,6 +179,29 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
                 Logger.warn(this, "Unable to convert contentlet to page asset " + con, e);
             }
         }
+
+        //We have to get PageUrl from the Identifier (AssetName)
+        if(!UtilMethods.isSet(pa.getPageUrl())){
+            try{
+                Identifier identifier = APILocator.getIdentifierAPI().find(con);
+                if(identifier != null && UtilMethods.isSet(identifier.getAssetName())){
+                    pa.setPageUrl(identifier.getAssetName());
+                } else {
+                    Logger.warn(this, "Unable to convert Contentlet to page asset, error at set PageUrl " + con);
+                }
+            }catch(Exception e){
+                pa=new HTMLPageAsset();
+                Logger.warn(this, "Unable to convert Contentlet to page asset " + con, e);
+            }
+        }
+
+        try {
+			CacheLocator.getHTMLPageCache().add(pa);
+		} catch (Exception e) {
+
+		}
+        
+
         return pa;
     }
 
@@ -426,7 +435,7 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
         HTMLPageAsset cworking=copyLegacyData(working, user, respectFrontEndPermissions), clive=null;
         if(vInfo.getLiveInode()!=null && !vInfo.getLiveInode().equals(vInfo.getWorkingInode())) {
             HTMLPage live=(HTMLPage) APILocator.getVersionableAPI().findLiveVersion(legacyident, user, respectFrontEndPermissions);
-            clive=copyLegacyData(working, user, respectFrontEndPermissions);
+            clive=copyLegacyData(live, user, respectFrontEndPermissions);
         }
         
         List<Permission> perms=null;
@@ -448,7 +457,7 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
         
         Contentlet ccworking = APILocator.getContentletAPI().checkin(cworking, user, respectFrontEndPermissions);
         
-        if(vInfo.getLiveInode()!=null && vInfo.getWorkingInode().equals(ccworking.getInode())) {
+        if(vInfo.getLiveInode()!=null && vInfo.getLiveInode().equals(ccworking.getInode())) {
             APILocator.getContentletAPI().publish(ccworking, user, respectFrontEndPermissions);
         }
         
@@ -487,17 +496,17 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
     }
 
     @Override
-    public boolean rename(HTMLPageAsset page, String newName, User user) throws DotDataException, DotSecurityException {
-        Identifier sourceIdent=APILocator.getIdentifierAPI().find(page);
-        Host host=APILocator.getHostAPI().find(sourceIdent.getHostId(), user, false);
-        Identifier targetIdent=APILocator.getIdentifierAPI().find(host, 
-                sourceIdent.getParentPath()+newName);
-        if(targetIdent==null || !InodeUtils.isSet(targetIdent.getId())) {
-            Contentlet cont=APILocator.getContentletAPI().checkout(page.getInode(), user, false);
-            cont.setStringProperty(URL_FIELD, newName);
-            cont=APILocator.getContentletAPI().checkin(cont, user, false);
-            if(page.isLive()) {
-                APILocator.getContentletAPI().publish(cont, user, false);
+    public boolean rename ( HTMLPageAsset page, String newName, User user ) throws DotDataException, DotSecurityException {
+
+        Identifier sourceIdent = APILocator.getIdentifierAPI().find( page );
+        Host host = APILocator.getHostAPI().find( sourceIdent.getHostId(), user, false );
+        Identifier targetIdent = APILocator.getIdentifierAPI().find( host, sourceIdent.getParentPath() + newName );
+        if ( targetIdent == null || !InodeUtils.isSet( targetIdent.getId() ) ) {
+            Contentlet cont = APILocator.getContentletAPI().checkout( page.getInode(), user, false );
+            cont.setStringProperty( URL_FIELD, newName );
+            cont = APILocator.getContentletAPI().checkin( cont, user, false );
+            if ( page.isLive() ) {
+                APILocator.getContentletAPI().publish( cont, user, false );
             }
             return true;
         }
@@ -689,7 +698,7 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
 
     @Override
     public String getHTML(IHTMLPage htmlPage, boolean liveMode,
-                          String contentId, User user, long langId, String userAgent)
+                          String contentId, User user, Long langId, String userAgent)
             throws DotStateException, DotDataException, DotSecurityException {
         String uri = htmlPage.getURI();
         Host host = getParentHost(htmlPage);
@@ -700,14 +709,14 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
 	public String getHTML(String uri, Host host, boolean liveMode,
 			String contentId, User user, String userAgent)
 			throws DotStateException, DotDataException, DotSecurityException {
-		return getHTML(uri, host, liveMode, contentId, user, 0, userAgent);
+		return getHTML(uri, host, liveMode, contentId, user, null, userAgent);
 	}
 
 
 
 	@Override
 	public String getHTML(String uri, Host host, boolean liveMode,
-			String contentId, User user, long langId, String userAgent)
+			String contentId, User user, Long langId, String userAgent)
 			throws DotStateException, DotDataException, DotSecurityException {
 		/*
 		 * The below code is copied from VelocityServlet.doLiveMode() and
@@ -747,10 +756,10 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
 			cachedUri = (liveMode) ? LiveCache.getPathFromCache(uri, host, langId)
 					: WorkingCache.getPathFromCache(uri, host, langId);
 		}else{
-			// Checking the path is really live using the livecache
-						cachedUri = (liveMode) ? LiveCache.getPathFromCache(uri, host)
-								: WorkingCache.getPathFromCache(uri, host);
-		}
+            // Checking the path is really live using the livecache
+            cachedUri = (liveMode) ? LiveCache.getPathFromCache(uri, host)
+                    : WorkingCache.getPathFromCache(uri, host);
+        }
 
 		// if we still have nothing.
 		if (!InodeUtils.isSet(idInode) || cachedUri == null) {
@@ -850,7 +859,7 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
 				requestProxy.setAttribute(WebKeys.WIKI_CONTENTLET, contentId);
 			}
 
-			if (langId > 0) {
+			if (langId != null && langId > 0) {
 				requestProxy.setAttribute(WebKeys.HTMLPAGE_LANGUAGE,
 						Long.toString(langId));
 			}
@@ -859,7 +868,7 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
 
 			context = VelocityUtil.getWebContext(requestProxy, responseProxy);
 
-			if (langId > 0) {
+			if (langId != null && langId > 0) {
 				context.put("language", Long.toString(langId));
 			}
 
@@ -867,21 +876,20 @@ public class HTMLPageAssetAPIImpl implements HTMLPageAssetAPI {
 				context.put("PREVIEW_MODE", new Boolean(true));
 			} else {
 				context.put("PREVIEW_MODE", new Boolean(false));
-			}
+            }
 
-			context.put("host", host);
+            context.put("host", host);
 			VelocityEngine ve = VelocityUtil.getEngine();
 
 			Logger.debug(HTMLPageAssetAPIImpl.class, "Got the template!!!!"
 					+ idInode);
 
 			requestProxy.setAttribute("velocityContext", context);
-			
-			String langStr = "_" + Long.toString(APILocator.getLanguageAPI().getDefaultLanguage().getId());
-			
-			if(UtilMethods.isSet(contentId)) {
-				langStr = "_" + APILocator.getContentletAPI().find(contentId, user, false).getLanguageId();
-			}
+
+            String langStr = "";
+            if ( langId != null && langId > 0 ) {
+                langStr = "_" + langId;
+            }
 
 			String VELOCITY_HTMLPAGE_EXTENSION = Config
 					.getStringProperty("VELOCITY_HTMLPAGE_EXTENSION");

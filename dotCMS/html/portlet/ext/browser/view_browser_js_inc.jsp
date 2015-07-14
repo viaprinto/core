@@ -11,7 +11,6 @@
 <%@page import="com.dotmarketing.portlets.structure.model.Structure"%>
 <%@page import="com.dotmarketing.portlets.fileassets.business.FileAssetAPI" %>
 <%@ page import="com.dotmarketing.business.CacheLocator" %>
-<%@ page import="static com.dotmarketing.business.PermissionAPI.PERMISSION_READ" %>
 
 <%
 Structure defaultFileAssetStructure = StructureCache.getStructureByName(FileAssetAPI.DEFAULT_FILE_ASSET_STRUCTURE_VELOCITY_VAR_NAME);
@@ -29,6 +28,8 @@ if(session.getAttribute(com.dotmarketing.util.WebKeys.LANGUAGE_SEARCHED)!= null)
 <script src="/html/js/scriptaculous/prototype.js" type="text/javascript"></script>
 <script src="/html/js/scriptaculous/scriptaculous.js" type="text/javascript"></script>
 
+<% // Include javascript method to upload multiple files %>
+<%@ include file="/html/portlet/ext/files/upload_multiple_js_inc.jsp" %>
 <script language="JavaScript">
 
 dojo.require("dotcms.dojo.data.StructureReadStore");
@@ -1760,7 +1761,7 @@ dojo.require("dotcms.dojo.push.PushHandler");
         <%
              String defaultPageSt = "0";
              Structure defaultHTMLPageST = StructureCache.getStructureByInode(APILocator.getHTMLPageAssetAPI().getHostDefaultPageType(myHost));
-             if(APILocator.getPermissionAPI().doesUserHavePermission(defaultHTMLPageST, PERMISSION_READ, user, false)) {
+             if(APILocator.getPermissionAPI().doesUserHavePermission(defaultHTMLPageST, PermissionAPI.PERMISSION_READ, user, false)) {
                defaultPageSt = defaultHTMLPageST.getInode();
              }
         %>
@@ -1818,64 +1819,6 @@ dojo.require("dotcms.dojo.push.PushHandler");
         	hidePopUp('context_menu_popup_'+parentId);
         }
 	}
-
-    /**
-     * Uploads multiple files
-     *
-     * @param uploader
-     * @param referer
-     * @param operation
-     * @return {boolean}
-     */
-    function uploadFiles(uploader, referer, operation) {
-
-        /**
-        * Registers and manage the onComplete event for uploaded files
-         *
-        * @param uploader
-        * @param referer
-         */
-        var uploaderHandler = function (uploader, referer) {
-
-            /*dojo.connect(uploader, "onProgress", function(dataArray){
-             //...
-             });*/
-            dojo.connect(uploader, "onComplete", function(dataArray){
-                window.location = referer;
-            });
-        };
-
-        var form = document.getElementById("fm");
-        var nameValueSeparator = "<%=com.dotmarketing.util.WebKeys.CONTENTLET_FORM_NAME_VALUE_SEPARATOR%>";
-        var uploadFiles = uploader.getFileList();
-
-        if (uploadFiles.length == 0) {
-            alert('<%= UtilMethods.escapeSingleQuotes(LanguageUtil.get(pageContext, "message.file_asset.alert.please.upload")) %>');
-            return false;
-        }
-        for (var temp = 0; temp < uploadFiles.length; temp++) {
-            var fileName = uploadFiles[temp].name;
-            if (temp == 0)
-                document.getElementById("fileNames").value = fileName;
-            else
-                document.getElementById("fileNames").value = document.getElementById("fileNames").value + nameValueSeparator + fileName;
-        }
-
-        document.getElementById("tableDiv").style.display = "none";
-        document.getElementById("messageDiv").style.display = "";
-
-        form.action = '<portlet:actionURL><portlet:param name="struts_action" value="/ext/files/upload_multiple" /></portlet:actionURL>';
-        form.<portlet:namespace />subcmd.value = operation;
-        form.cmd.value = "<%= Constants.ADD %>";
-        dijit.byId('saveButton').setAttribute('disabled', true);
-        if (dijit.byId('savePublishButton') != null) {
-            dijit.byId('savePublishButton').setAttribute('disabled', true);
-        }
-
-        submitForm(form);
-
-        return true;
-    }
 
 	function removeAddlStyleRef(){//DOTCMS-6856
 		dijit.byId('addFileDialog').containerNode.getElementsByTagName("style")[0].remove(dijit.byId('addFileDialog').containerNode.getElementsByTagName("style")[0].childNodes[0]);

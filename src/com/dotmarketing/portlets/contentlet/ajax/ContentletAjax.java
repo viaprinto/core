@@ -555,7 +555,7 @@ public class ContentletAjax {
 		        }
 		    }
 		    luceneQuery.append("-contentType:Host ");
-		    luceneQuery.append("-type:3 ");
+		    luceneQuery.append("-baseType:3 ");
 		}
 
 		WorkflowScheme wfScheme = APILocator.getWorkflowAPI().findSchemeForStruct(st);
@@ -912,6 +912,11 @@ public class ContentletAjax {
 					if (UtilMethods.isSet(fieldValue))
 						fieldValue = fieldValue.replaceAll("# #",",").replaceAll("#","");
 				}
+                //We need to replace the URL value from the contentlet with the one in the Identifier.
+                if(("url").equals(fieldContentlet) && UtilMethods.isSet(ident) && UtilMethods.isSet(ident.getAssetName())){
+                    fieldValue = ident.getAssetName();
+                }
+
 				searchResult.put(fieldContentlet, fieldValue);
 			}
 			searchResult.put("inode", con.getInode());
@@ -1826,9 +1831,12 @@ public class ContentletAjax {
 				APILocator.getVersionableAPI().setLive(cont);
 			}else{
 				//cont.setLive(false);
-				conAPI.saveDraft(cont, contentRelationships,
+				Contentlet draftContentlet = conAPI.saveDraft(cont, contentRelationships,
 					APILocator.getCategoryAPI().getParents(cont, user, false),
 					APILocator.getPermissionAPI().getPermissions(cont, false, true), user, false);
+				
+                callbackData.put("isNewContentletInodeHtmlPage", draftContentlet.isHTMLPage());
+				callbackData.put("newContentletInode", draftContentlet.getInode());
 			}
 		}catch (DotContentletValidationException ve) {
 

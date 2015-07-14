@@ -259,7 +259,7 @@ public class PageServices {
                 if(++countFull>=c.getMaxContentlets()) break;
             }
 			
-			sb.append("#if($request.session.getAttribute(\"tm_date\"))");
+			sb.append("#if(! $null.isNull($request.getSession(false)) && $request.session.getAttribute(\"tm_date\"))");
 			   sb.append(widgetpreeFull);
 			   sb.append("#set ($contentletList" ).append( ident.getIdentifier() )
                  .append( " = [" ).append( contentletListFull.toString() ).append( "] )");
@@ -302,7 +302,7 @@ public class PageServices {
                 //Merging our template
                 sb.append( "$velutil.mergeTemplate(\"$dotTheme.templatePath\")" );
             } else {
-                sb.append( "$velutil.mergeTemplate('" ).append( folderPath ).append( iden.getInode() ).append( "." ).append( Config.getStringProperty( "VELOCITY_TEMPLATE_EXTENSION","html" ) ).append( "')" );
+                sb.append( "$velutil.mergeTemplate('" ).append( folderPath ).append( iden.getInode() ).append( "." ).append( Config.getStringProperty( "VELOCITY_TEMPLATE_EXTENSION","template" ) ).append( "')" );
             }
 		sb.append("#end");
 		
@@ -310,11 +310,11 @@ public class PageServices {
 		try {
 
 			if(Config.getBooleanProperty("SHOW_VELOCITYFILES", false)){
-				String languageStr = htmlPage.isContent() ? "_" + ((Contentlet)htmlPage).getLanguageId():Long.toString(APILocator.getLanguageAPI().getDefaultLanguage().getId());
+				String languageStr = htmlPage.isContent() ? "_" + ((Contentlet)htmlPage).getLanguageId():"";
 				
 			    String realFolderPath = (!EDIT_MODE) ? "live" + java.io.File.separator: "working" + java.io.File.separator;
 	            String velocityRootPath = Config.getStringProperty("VELOCITY_ROOT");
-	            String filePath = realFolderPath + identifier.getInode() + languageStr + "." + Config.getStringProperty("VELOCITY_HTMLPAGE_EXTENSION","html");
+	            String filePath = realFolderPath + identifier.getInode() + languageStr + "." + Config.getStringProperty("VELOCITY_HTMLPAGE_EXTENSION","dotpage");
 	            if (velocityRootPath.startsWith("/WEB-INF")) {
 	                velocityRootPath = com.liferay.util.FileUtil.getRealPath(velocityRootPath);
 	            }
@@ -361,7 +361,7 @@ public class PageServices {
 			velocityRootPath = com.liferay.util.FileUtil.getRealPath(velocityRootPath);
 		}
 		String languageStr = htmlPage.isContent() ? "_" + ((Contentlet)htmlPage).getLanguageId():"";
-		String filePath = folderPath + identifier.getInode() + languageStr + "." + Config.getStringProperty("VELOCITY_HTMLPAGE_EXTENSION","html");
+		String filePath = folderPath + identifier.getInode() + languageStr + "." + Config.getStringProperty("VELOCITY_HTMLPAGE_EXTENSION","dotpage");
 		velocityRootPath += java.io.File.separator;
 		java.io.File f  = new java.io.File(velocityRootPath + filePath);
 		f.delete();

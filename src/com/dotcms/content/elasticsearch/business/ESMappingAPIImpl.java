@@ -274,7 +274,8 @@ public class ESMappingAPIImpl implements ContentMappingAPI {
 			m.put("structureName", st.getVelocityVarName()); // marked for DEPRECATION
 			m.put("contentType", st.getVelocityVarName());
             m.put("structureType", st.getStructureType() + ""); // marked for DEPRECATION
-            m.put("type", st.getStructureType() + "");
+            m.put("baseType", st.getStructureType() + "");
+            m.put("type", "content");
             m.put("inode", con.getInode());
             m.put("modDate", datetimeFormat.format(con.getModDate()));
             m.put("owner", con.getOwner()==null ? "0" : con.getOwner());
@@ -349,6 +350,11 @@ public class ESMappingAPIImpl implements ContentMappingAPI {
                     mlowered.put(lvar+".metadata.content", contentData);
                 }
             }
+
+			//The url is now stored under the identifier for html pages, so we need to index that also.
+			if(con.getStructure().getStructureType() == Structure.STRUCTURE_TYPE_HTMLPAGE){
+				mlowered.put(con.getStructure().getVelocityVarName().toLowerCase() + ".url", ident.getAssetName());
+			}
 
             return mlowered;
 		} catch (Exception e) {
