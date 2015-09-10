@@ -194,6 +194,12 @@ public class BinaryExporterServlet extends HttpServlet {
 		try {
 			User user = userWebAPI.getLoggedInUser(req);
 			boolean respectFrontendRoles = !userWebAPI.isLoggedToBackend(req);
+
+			//If session is in Admin Mode (Edit Mode) we should respect front end roles also.
+			if(session != null && session.getAttribute(com.dotmarketing.util.WebKeys.ADMIN_MODE_SESSION) != null){
+				respectFrontendRoles = true;
+			}
+
 			String downloadName = "file_asset";
 			long lang = APILocator.getLanguageAPI().getDefaultLanguage().getId();
 			try {
@@ -305,8 +311,11 @@ public class BinaryExporterServlet extends HttpServlet {
 					resp.sendError(404);
 					return;
 				}
+
+				com.dotmarketing.portlets.files.model.File file = (com.dotmarketing.portlets.files.model.File)APILocator.getVersionableAPI().findLiveVersion(id, user, respectFrontendRoles);
+
 				// no permissions, no soup!
-				if(!APILocator.getPermissionAPI().doesUserHavePermission(id, PermissionAPI.PERMISSION_READ, user)){
+				if(!APILocator.getPermissionAPI().doesUserHavePermission(file, PermissionAPI.PERMISSION_READ, user)){
 					Logger.debug(this,"user: " + user + " does not have read on File :" + id.getInode());
 					if(WebAPILocator.getUserWebAPI().isLoggedToFrontend(req)){
 						resp.sendError(403);
