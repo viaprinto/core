@@ -1,0 +1,15 @@
+:host .site-selector__title {
+  color: #FFF;
+  font-size: 20px;
+  margin: 0 0 0 10px;
+  align-self: center;
+}
+
+:host .site-selector__title .site-selector__option {
+  color: #444444;
+  font-size: 18px;
+}
+
+:host dot-select .dot-select__options {
+  margin-top: 50px;
+}

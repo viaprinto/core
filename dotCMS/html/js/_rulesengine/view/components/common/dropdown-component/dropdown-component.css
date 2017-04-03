@@ -1,0 +1,26 @@
+:host {
+  position: relative;
+}
+
+:host .dropdown-content {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  background-color: #FFF;
+  color: #444444;
+  overflow: scroll;
+  padding: 5px 10px 5px 10px;
+  position: absolute;
+  top: 25px;
+  z-index: 100;
+}
+
+:host i {
+  padding: 5px;
+}
+
+:host .dropdown-content_align-left {
+  left: 0;
+}
+
+:host .dropdown-content_align-right {
+  right: 0;
+}

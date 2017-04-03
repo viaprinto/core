@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>(Dev) dotCMS Core-Web</title>
+
+  <link rel="stylesheet" href="styles/app-e12e22710a.style.css"/>
+
+  <!-- 1. Load libraries -->
+  <!-- Polyfill(s) for older browsers -->
+  <script src="thirdparty/lib-361ae731a6.js"></script>
+
+  <!-- 2. Configure SystemJS -->
+  <script src="systemjs.config.js"></script>
+  <script>
+    System.import('view/boot.js')
+            .catch(function(err) { console.error(err); });
+  </script>
+</head>
+
+
+<body>
+<cw-rule-engine-container>Loading...</cw-rule-engine-container>
+</body>
+</html>

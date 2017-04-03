@@ -1,0 +1,80 @@
+:host md-input {
+  overflow: inherit;
+  width: 100%;
+}
+
+:host .cms-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+:host .cms-info__message {
+  color: #737373;
+  font-size: 0.75rem;
+}
+
+:host .cms-info__logo {
+  width: 200px;
+}
+
+:host .login {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+}
+
+:host .login__container {
+  box-shadow: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.22);
+  background-color: #FFF;
+  display: flex;
+  padding: 30px 60px;
+}
+
+:host .login__container.forgot-password__container {
+  margin: 0 auto;
+  padding: 30px;
+  width: 500px;
+}
+
+:host .login__form-line {
+  padding: 8px 0;
+}
+
+:host .login__title {
+  color: #03AAD5;
+  font-size: 3rem;
+  font-weight: normal;
+  margin: 0;
+}
+
+:host .signin {
+  border-left: solid 1px #D0D0D0;
+  padding-left: 60px;
+  position: relative;
+}
+
+:host .signin:before {
+  background-color: #FFF;
+  border: solid #D0D0D0;
+  border-width: 1px 1px 0 0;
+  content: '';
+  height: 14px;
+  left: -7px;
+  margin-top: -7px;
+  position: absolute;
+  top: 50%;
+  transform: rotate(45deg);
+  width: 14px;
+}
+
+:host .singin__language {
+  float: right;
+}
+
+:host .app-spinner {
+  height: 30px;
+  width: 30px;
+  display: inline-block;
+}

@@ -1,0 +1,13 @@
+:host md-nav-list a {
+  display: block;
+  padding: 5px 0;
+}
+
+:host .md-nav-list__submenu {
+  font-size: 14px;
+  padding: 5px 0 10px 0;
+}
+
+:host .md-nav-list__submenu a {
+  color: gray;
+}
